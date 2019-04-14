@@ -1,0 +1,7 @@
+POST https://example.com/
+Authorization: Bearer FAKE_TOKEN
+Content-Type: text/plain
+
+This is the body
+
+###
