@@ -31,15 +31,45 @@ func makeCall(input *Input, writer io.Writer) {
 
 var (
 	app = kingpin.New("rest-easy", "A command-line http execution utility.")
-	run = app.Command("run", "Run a request")
+	run = app.Command("run", "Run a request").Alias("r")
 	runInput = run.Arg("input", "Input file. This can be omitted if piping from stdin.").String()
 	runOutput = run.Flag("output", "Output file. If this is omitted, then the response is written to stdout.").Short('o').String()
+	info = app.Command("info", "Get information about a request").Alias("i")
+	infoInput = run.Arg("input", "Input file. This can be omitted if piping from stdin").String()
 )
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case run.FullCommand():
 		executeRun(runInput, runOutput)
+	case info.FullCommand():
+		executeInfo(infoInput)
+	}
+}
+
+func executeInfo(infoInput *string) {
+	var requestReader io.Reader
+
+	if len(*infoInput) > 0 {
+		fileReader, _ := os.Open(*infoInput)
+		defer fileReader.Close()
+		requestReader = fileReader
+	} else {
+		stats, _ := os.Stdin.Stat()
+		if stats.Size() > 0 {
+			requestReader = os.Stdin
+		} else {
+			app.Usage([]string {"info"})
+			return
+		}
+	}
+
+	variables := make(map[string]string)
+	request := Parse(requestReader, variables)
+
+	fmt.Printf("%v %v", request.method, request.url)
+	for k, v := range variables {
+		fmt.Printf("%v = %v", k, v)
 	}
 }
 
@@ -48,7 +78,9 @@ func executeRun(runInput, runOutput *string) {
 	var responseWriter io.Writer
 
 	if len(*runInput) > 0 {
-		requestReader, _ = os.Open(*runInput)
+		fileReader, _ := os.Open(*runInput)
+		defer fileReader.Close()
+		requestReader = fileReader
 	} else {
 		stats, _ := os.Stdin.Stat()
 		if stats.Size() > 0 {
@@ -65,6 +97,7 @@ func executeRun(runInput, runOutput *string) {
 		responseWriter = os.Stdout
 	}
 
-	request := Parse(requestReader)
+	variables := make(map[string]string)
+	request := Parse(requestReader, variables)
 	makeCall(request, responseWriter)
 }

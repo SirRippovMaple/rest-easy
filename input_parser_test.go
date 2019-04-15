@@ -40,7 +40,7 @@ func TestSimpleGetRequest(t *testing.T) {
 	}
 
 	reader, _ := os.Open("TestFiles/simple-get.http")
-	input := Parse(reader)
+	input := Parse(reader, make(map[string]string))
 
 	assertInput(t, expectedInput, input)
 }
@@ -57,7 +57,7 @@ func TestSimplePostRequest(t *testing.T) {
 	}
 
 	reader, _ := os.Open("TestFiles/simple-post.http")
-	input := Parse(reader)
+	input := Parse(reader, make(map[string]string))
 
 	assertInput(t, expectedInput, input)
 }
@@ -72,7 +72,7 @@ func TestTemplateGetRequest(t *testing.T) {
 	}
 
 	reader, _ := os.Open("TestFiles/template-get.http")
-	input := Parse(reader)
+	input := Parse(reader, make(map[string]string))
 
 	assertInput(t, expectedInput, input)
 }

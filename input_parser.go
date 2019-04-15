@@ -17,11 +17,11 @@ type parser struct {
 	bodyMode bool
 }
 
-func Parse(reader io.Reader) *Input {
+func Parse(reader io.Reader, variables map[string]string) *Input {
 	scanner := bufio.NewScanner(reader)
 	parser := &parser{bodyMode: false}
 	available := scanner.Scan()
-	variables, available := parser.parseFrontMatter(scanner, available)
+	available = parser.parseFrontMatter(scanner, available, variables)
 	method, url, available := parser.parseFirstLine(scanner, variables, available)
 	if !available {
 		panic("No first line")
@@ -32,11 +32,9 @@ func Parse(reader io.Reader) *Input {
 	return &Input{*method, *url, headers, body}
 }
 
-func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool) (map[string]string, bool) {
-	variables := make(map[string]string)
-
+func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, variables map[string]string) (bool) {
 	if scanner.Text() != "---" {
-		return make(map[string]string), available
+		return available
 	}
 
 	for scanner.Scan() && scanner.Text() != "---" {
@@ -47,7 +45,7 @@ func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool) (
 		variables[key] = value
 	}
 
-	return variables, scanner.Scan()
+	return scanner.Scan()
 }
 
 func (parser *parser) parseFirstLine(scanner *bufio.Scanner, variables map[string]string, available bool) (method *string, url *string, returnAvailable bool) {
