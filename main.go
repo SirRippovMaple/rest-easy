@@ -2,14 +2,15 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 )
 
-func makeCall(input *Input) {
+func makeCall(input *Input, writer io.Writer) {
 	client := &http.Client{}
 	request, _ := http.NewRequest(input.method, input.url, bytes.NewReader(input.body))
 	for _, header := range input.headers {
@@ -19,17 +20,35 @@ func makeCall(input *Input) {
 
 	response, _ := client.Do(request)
 
-	fmt.Printf("HTTP %v\n", response.StatusCode)
+	fmt.Fprintf(writer, "HTTP %v\n", response.StatusCode)
 	for headerKey, headerValue := range response.Header {
-		fmt.Printf("%v: %v\n", headerKey, headerValue)
+		fmt.Fprintf(writer, "%v: %v\n", headerKey, headerValue)
 	}
 
-	fmt.Printf("\n")
-	responseBody, _ := ioutil.ReadAll(response.Body)
-	os.Stdout.Write(responseBody)
+	fmt.Fprintf(writer, "\n")
+	io.Copy(writer, response.Body)
 }
 
 func main() {
-	input := Parse(os.Stdin)
-	makeCall(input)
+	input := flag.String("input", "", "The request file")
+	output := flag.String("output", "", "The file to write the response output")
+	flag.Parse()
+	
+	var requestReader io.Reader
+	var responseWriter io.Writer
+
+	if len(*input) > 0 {
+		requestReader, _ = os.Open(*input)
+	} else {
+		requestReader = os.Stdin
+	}
+
+	if len(*output) > 0 {
+		responseWriter = os.Stdout
+	} else {
+		responseWriter = os.Stdout
+	}
+
+	request := Parse(requestReader)
+	makeCall(request, responseWriter)
 }
