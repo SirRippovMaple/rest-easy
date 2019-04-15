@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
+	"gopkg.in/alecthomas/kingpin.v2"
 	"io"
 	"net/http"
 	"os"
@@ -29,27 +29,37 @@ func makeCall(input *Input, writer io.Writer) {
 	io.Copy(writer, response.Body)
 }
 
+var (
+	app = kingpin.New("rest-easy", "A command-line http execution utility.")
+	run = app.Command("run", "Run a request")
+	runInput = run.Arg("input", "Input file. This can be omitted if piping from stdin.").String()
+	runOutput = run.Flag("output", "Output file. If this is omitted, then the response is written to stdout.").Short('o').String()
+)
+
 func main() {
-	input := flag.String("input", "", "The request filer")
-	output := flag.String("output", "", "The file to write the response output")
-	flag.Parse()
-	
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case run.FullCommand():
+		executeRun(runInput, runOutput)
+	}
+}
+
+func executeRun(runInput, runOutput *string) {
 	var requestReader io.Reader
 	var responseWriter io.Writer
 
-	if len(*input) > 0 {
-		requestReader, _ = os.Open(*input)
+	if len(*runInput) > 0 {
+		requestReader, _ = os.Open(*runInput)
 	} else {
 		stats, _ := os.Stdin.Stat()
 		if stats.Size() > 0 {
 			requestReader = os.Stdin
 		} else {
-			flag.Usage()
+			app.Usage([]string {"run"})
 			return
 		}
 	}
 
-	if len(*output) > 0 {
+	if len(*runOutput) > 0 {
 		responseWriter = os.Stdout
 	} else {
 		responseWriter = os.Stdout
