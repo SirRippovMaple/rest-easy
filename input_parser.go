@@ -8,6 +8,7 @@ import (
 
 type Input struct {
 	method  string
+	originalUrl string
 	url     string
 	headers []string
 	body    []byte
@@ -22,14 +23,14 @@ func Parse(reader io.Reader, variables map[string]string) *Input {
 	parser := &parser{bodyMode: false}
 	available := scanner.Scan()
 	available = parser.parseFrontMatter(scanner, available, variables)
-	method, url, available := parser.parseFirstLine(scanner, variables, available)
+	method, url, originalUrl, available := parser.parseFirstLine(scanner, variables, available)
 	if !available {
 		panic("No first line")
 	}
 	headers, available := parser.parseHeaders(scanner, variables)
 	body := parser.parseBody(scanner)
 
-	return &Input{*method, *url, headers, body}
+	return &Input{*method, *originalUrl, *url, headers, body}
 }
 
 func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, variables map[string]string) (bool) {
@@ -48,19 +49,20 @@ func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, v
 	return scanner.Scan()
 }
 
-func (parser *parser) parseFirstLine(scanner *bufio.Scanner, variables map[string]string, available bool) (method *string, url *string, returnAvailable bool) {
+func (parser *parser) parseFirstLine(scanner *bufio.Scanner, variables map[string]string, available bool) (method , url, originalUrl *string, returnAvailable bool) {
 	if !available {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	line := scanner.Text()
 	if space := strings.Index(line, " "); space > 0 {
 		method := line[0:space]
-		url := replaceVariables(line[space+1:], variables)
-		return &method, &url, available
+		originalUrl := line[space+1:]
+		url := replaceVariables(originalUrl, variables)
+		return &method, &url, &originalUrl, available
 	}
 
-	return nil, nil, false
+	return nil, nil, nil,false
 }
 
 func (parser *parser) parseHeaders(scanner *bufio.Scanner, variables map[string]string) (headers []string, available bool) {

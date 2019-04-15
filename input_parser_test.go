@@ -15,6 +15,10 @@ func assertInput(t *testing.T, expected *Input, actual *Input) {
 		t.Errorf("Received the incorrect url. Expected %v, but got %v", expected.url, actual.url)
 	}
 
+	if actual.originalUrl != expected.originalUrl {
+		t.Errorf("Received the incorrect original url. Expected %v, but got %v", expected.originalUrl, actual.originalUrl)
+	}
+
 	if len(actual.headers) != len(expected.headers) {
 		t.Errorf("Received the incorrect number of headers. Expected %v, but got %v", len(expected.headers), len(actual.headers))
 	}
@@ -36,6 +40,7 @@ func TestSimpleGetRequest(t *testing.T) {
 	expectedInput := &Input{
 		method:  "GET",
 		url:     "https://example.com/",
+		originalUrl: "https://example.com/",
 		headers: []string{"Authorization: Bearer FAKE_TOKEN"},
 	}
 
@@ -49,6 +54,7 @@ func TestSimplePostRequest(t *testing.T) {
 	expectedInput := &Input{
 		method: "POST",
 		url:    "https://example.com/",
+		originalUrl: "https://example.com/",
 		headers: []string{
 			"Authorization: Bearer FAKE_TOKEN",
 			"Content-Type: text/plain",
@@ -66,6 +72,7 @@ func TestTemplateGetRequest(t *testing.T) {
 	expectedInput := &Input {
 		method: "GET",
 		url: "https://example.com/1",
+		originalUrl: "https://example.com/{{id}}",
 		headers: []string{
 			"Authorization: Bearer FAKE_TOKEN_1",
 		},

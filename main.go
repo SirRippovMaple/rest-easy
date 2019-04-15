@@ -35,7 +35,7 @@ var (
 	runInput = run.Arg("input", "Input file. This can be omitted if piping from stdin.").String()
 	runOutput = run.Flag("output", "Output file. If this is omitted, then the response is written to stdout.").Short('o').String()
 	info = app.Command("info", "Get information about a request").Alias("i")
-	infoInput = run.Arg("input", "Input file. This can be omitted if piping from stdin").String()
+	infoInput = info.Arg("input", "Input file. This can be omitted if piping from stdin").String()
 )
 
 func main() {
@@ -67,9 +67,15 @@ func executeInfo(infoInput *string) {
 	variables := make(map[string]string)
 	request := Parse(requestReader, variables)
 
-	fmt.Printf("%v %v", request.method, request.url)
-	for k, v := range variables {
-		fmt.Printf("%v = %v", k, v)
+	fmt.Printf("%v %v\n\n", request.method, request.originalUrl)
+
+	fmt.Printf("Variables:\n")
+	if len(variables) == 0 {
+		fmt.Printf("No variables.\n")
+	} else {
+		for k, v := range variables {
+			fmt.Printf("%v = %v\n", k, v)
+		}
 	}
 }
 
