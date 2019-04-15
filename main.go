@@ -30,7 +30,7 @@ func makeCall(input *Input, writer io.Writer) {
 }
 
 func main() {
-	input := flag.String("input", "", "The request file")
+	input := flag.String("input", "", "The request filer")
 	output := flag.String("output", "", "The file to write the response output")
 	flag.Parse()
 	
@@ -40,7 +40,13 @@ func main() {
 	if len(*input) > 0 {
 		requestReader, _ = os.Open(*input)
 	} else {
-		requestReader = os.Stdin
+		stats, _ := os.Stdin.Stat()
+		if stats.Size() > 0 {
+			requestReader = os.Stdin
+		} else {
+			flag.Usage()
+			return
+		}
 	}
 
 	if len(*output) > 0 {
