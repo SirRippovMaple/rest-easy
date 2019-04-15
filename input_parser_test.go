@@ -61,3 +61,18 @@ func TestSimplePostRequest(t *testing.T) {
 
 	assertInput(t, expectedInput, input)
 }
+
+func TestTemplateGetRequest(t *testing.T) {
+	expectedInput := &Input {
+		method: "GET",
+		url: "https://example.com/1",
+		headers: []string{
+			"Authorization: Bearer FAKE_TOKEN_1",
+		},
+	}
+
+	reader, _ := os.Open("TestFiles/template-get.http")
+	input := Parse(reader)
+
+	assertInput(t, expectedInput, input)
+}
