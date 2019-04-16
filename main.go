@@ -34,6 +34,7 @@ var (
 	run = app.Command("run", "Run a request").Alias("r")
 	runInput = run.Arg("input", "Input file. This can be omitted if piping from stdin.").String()
 	runOutput = run.Flag("output", "Output file. If this is omitted, then the response is written to stdout.").Short('o').String()
+	runVariables = run.Flag("set-property", "Sets or overrides a property/variable.").Short('p').StringMap()
 	info = app.Command("info", "Get information about a request").Alias("i")
 	infoInput = info.Arg("input", "Input file. This can be omitted if piping from stdin").String()
 )
@@ -103,7 +104,6 @@ func executeRun(runInput, runOutput *string) {
 		responseWriter = os.Stdout
 	}
 
-	variables := make(map[string]string)
-	request := Parse(requestReader, variables)
+	request := Parse(requestReader, *runVariables)
 	makeCall(request, responseWriter)
 }

@@ -43,7 +43,9 @@ func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, v
 		colonIndex := strings.Index(line, ":")
 		key := strings.TrimSpace(line[:colonIndex])
 		value := strings.TrimSpace(line[colonIndex+1:])
-		variables[key] = value
+		if _, exists := variables[key]; !exists {
+			variables[key] = value
+		}
 	}
 
 	return scanner.Scan()

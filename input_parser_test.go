@@ -83,3 +83,19 @@ func TestTemplateGetRequest(t *testing.T) {
 
 	assertInput(t, expectedInput, input)
 }
+
+func TestTemplateGetRequestWithOverride(t *testing.T) {
+	expectedInput := &Input {
+		method: "GET",
+		url: "https://example.com/3",
+		originalUrl: "https://example.com/{{id}}",
+		headers: []string{
+			"Authorization: Bearer FAKE_TOKEN_3",
+		},
+	}
+
+	reader, _ := os.Open("TestFiles/template-get.http")
+	input := Parse(reader, map[string]string{"id":"3"})
+
+	assertInput(t, expectedInput, input)
+}
