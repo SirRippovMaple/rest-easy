@@ -33,7 +33,7 @@ func Parse(reader io.Reader, variables map[string]string) *Input {
 	return &Input{*method, *originalUrl, *url, headers, body}
 }
 
-func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, variables map[string]string) (bool) {
+func (parser *parser) parseFrontMatter(scanner *bufio.Scanner, available bool, variables map[string]string) bool {
 	if scanner.Text() != "---" {
 		return available
 	}

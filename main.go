@@ -10,23 +10,44 @@ import (
 	"strings"
 )
 
-func makeCall(input *Input, writer io.Writer) {
+func makeCall(input *Input, writer io.Writer) error{
 	client := &http.Client{}
-	request, _ := http.NewRequest(input.method, input.url, bytes.NewReader(input.body))
+	request, err := http.NewRequest(input.method, input.url, bytes.NewReader(input.body))
+	if err != nil {
+		return err
+	}
 	for _, header := range input.headers {
 		index := strings.Index(header, ":")
 		request.Header.Add(header[0:index], strings.TrimSpace(header[index+1:]))
 	}
 
-	response, _ := client.Do(request)
-
-	fmt.Fprintf(writer, "HTTP %v\n", response.StatusCode)
-	for headerKey, headerValue := range response.Header {
-		fmt.Fprintf(writer, "%v: %v\n", headerKey, headerValue)
+	response, err := client.Do(request)
+	if err != nil {
+		return err
 	}
 
-	fmt.Fprintf(writer, "\n")
-	io.Copy(writer, response.Body)
+	_, err = fmt.Fprintf(writer, "HTTP %v\n", response.StatusCode)
+	if err != nil {
+		return err
+	}
+	for headerKey, headerValue := range response.Header {
+		_, err = fmt.Fprintf(writer, "%v: %v\n", headerKey, headerValue)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = fmt.Fprintf(writer, "\n")
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(writer, response.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var (
@@ -40,28 +61,51 @@ var (
 )
 
 func main() {
+	var err error
+
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case run.FullCommand():
-		executeRun(runInput, runOutput)
+		err = executeRun(runInput, runOutput)
+		break
+
 	case info.FullCommand():
-		executeInfo(infoInput)
+		err = executeInfo(infoInput)
+		break
 	}
+
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, "\n")
+	}
+
 }
 
-func executeInfo(infoInput *string) {
+func executeInfo(infoInput *string) error {
 	var requestReader io.Reader
 
 	if len(*infoInput) > 0 {
-		fileReader, _ := os.Open(*infoInput)
-		defer fileReader.Close()
+		fileReader, err := os.Open(*infoInput)
+
+		if fileReader != nil {
+			defer func() {
+				_ = fileReader.Close()
+			}()
+		}
+		if err != nil {
+			return err
+		}
+
 		requestReader = fileReader
 	} else {
-		stats, _ := os.Stdin.Stat()
+		stats, err := os.Stdin.Stat()
+		if err != nil {
+			return err
+		}
 		if stats.Size() > 0 {
 			requestReader = os.Stdin
 		} else {
 			app.Usage([]string {"info"})
-			return
+			return nil
 		}
 	}
 
@@ -78,15 +122,25 @@ func executeInfo(infoInput *string) {
 			fmt.Printf("%v = %v\n", k, v)
 		}
 	}
+
+	return nil
 }
 
-func executeRun(runInput, runOutput *string) {
+func executeRun(runInput, runOutput *string) error {
 	var requestReader io.Reader
 	var responseWriter io.Writer
 
 	if len(*runInput) > 0 {
-		fileReader, _ := os.Open(*runInput)
-		defer fileReader.Close()
+		fileReader, err := os.Open(*runInput)
+		if fileReader != nil {
+			defer func() {
+				_ = fileReader.Close()
+			}()
+		}
+		if err != nil {
+			return err
+		}
+
 		requestReader = fileReader
 	} else {
 		stats, _ := os.Stdin.Stat()
@@ -94,7 +148,7 @@ func executeRun(runInput, runOutput *string) {
 			requestReader = os.Stdin
 		} else {
 			app.Usage([]string {"run"})
-			return
+			return nil
 		}
 	}
 
@@ -105,5 +159,7 @@ func executeRun(runInput, runOutput *string) {
 	}
 
 	request := Parse(requestReader, *runVariables)
-	makeCall(request, responseWriter)
+	err := makeCall(request, responseWriter)
+
+	return err
 }
