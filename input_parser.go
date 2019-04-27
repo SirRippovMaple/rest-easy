@@ -60,8 +60,8 @@ func (parser *parser) parseFirstLine(scanner *bufio.Scanner, variables map[strin
 	if space := strings.Index(line, " "); space > 0 {
 		method := line[0:space]
 		originalUrl := line[space+1:]
-		url := replaceVariables(originalUrl, variables)
-		return &method, &url, &originalUrl, available
+		url := replaceUrl(originalUrl, variables)
+		return &method, url, &originalUrl, available
 	}
 
 	return nil, nil, nil,false
@@ -75,7 +75,7 @@ func (parser *parser) parseHeaders(scanner *bufio.Scanner, variables map[string]
 			break
 		}
 
-		headers = append(headers, replaceVariables(line, variables))
+		headers = append(headers, *replaceVariables(line, variables))
 		available = scanner.Scan()
 	}
 
@@ -93,17 +93,6 @@ func (parser *parser) splitFunc(data []byte, atEOF bool) (advance int, token []b
 		return bodySplitFunc(data, atEOF)
 	}
 	return bufio.ScanLines(data, atEOF)
-}
-
-// Probably very slow, but this works for now
-func replaceVariables(input string, variables map[string]string) string {
-	current := input
-	for k, v := range variables {
-		token := "{{" + k + "}}"
-		current = strings.Replace(current, token, v, -1)
-	}
-
-	return current
 }
 
 func bodySplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
